@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+  
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id       String    @id
+  email    String    @unique
+  password String
+  name     String?
+  bookings Booking[]
+  reviews  Review[]
+}
+
+model Host {
+  id         String     @id
+  name       String
+  properties Property[]
+}
+
+model Property {
+  id        String    @id
+  title     String
+  location  String
+  hostId    String
+  bookings  Booking[]
+  host      Host      @relation(fields: [hostId], references: [id])
+  reviews   Review[]
+  amenities Amenity[] @relation("PropertyAmenities")
+}
+
+model Booking {
+  id         String   @id
+  userId     String
+  propertyId String
+  startDate  DateTime
+  endDate    DateTime
+  property   Property @relation(fields: [propertyId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id         String   @id
+  userId     String
+  propertyId String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  property   Property @relation(fields: [propertyId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Amenity {
+  id         String     @id
+  name       String     @unique
+  properties Property[] @relation("PropertyAmenities")
+}
