@@ -1,6 +1,8 @@
 import express from "express";
 import "dotenv/config";
-import * as Sentry from "@sentry/node";
+
+import logMiddleware from "./middleware/logMiddleware.js";
+import errorHandler from "./middleware/errorHandler.js";
 
 import loginRouter from "./routes/login.js";
 import usersRouter from "./routes/users.js";
@@ -9,31 +11,13 @@ import propertiesRouter from "./routes/properties.js";
 import bookingsRouter from "./routes/bookings.js";
 import reviewsRouter from "./routes/reviews.js";
 
-import logMiddleware from "./middleware/logMiddleware.js";
-import errorHandler from "./middleware/errorHandler.js";
-
 const app = express();
 
-// Sentry (required by assignment)
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-});
-
-// Sentry request handler
-app.use(Sentry.Handlers.requestHandler());
-
-// JSON body parsing (required)
 app.use(express.json());
-
-// Duration logging (required)
 app.use(logMiddleware);
 
-// Root route
-app.get("/", (req, res) => {
-  res.send("Hello world!");
-});
+app.get("/", (req, res) => res.send("OK"));
 
-// Mount routes
 app.use("/login", loginRouter);
 app.use("/users", usersRouter);
 app.use("/hosts", hostsRouter);
@@ -41,12 +25,12 @@ app.use("/properties", propertiesRouter);
 app.use("/bookings", bookingsRouter);
 app.use("/reviews", reviewsRouter);
 
-// Sentry error handler (must be before your error handler)
-app.use(Sentry.Handlers.errorHandler());
+// Catch-all 404 (JSON)
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
 
-// Global error handler (required)
+// Error handler
 app.use(errorHandler);
 
-app.listen(3000, () => {
-  console.log("Server is listening on port 3000");
-});
+app.listen(3000, () => console.log("Server is listening on port 3000"));

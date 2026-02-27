@@ -1,9 +1,7 @@
 import prisma from "../../prisma.js";
 
-const getReviewById = async (id) => {
-  return prisma.review.findUnique({
-    where: { id: String(id) },
-  });
+const getReviews = async () => {
+  return prisma.review.findMany();
 };
 
-export default getReviewById;
+export default getReviews;

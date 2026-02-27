@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  
 }
 
 datasource db {
@@ -8,10 +7,13 @@ datasource db {
 }
 
 model User {
-  id       String    @id
-  email    String    @unique
+  id       String  @id
+  username String  @unique
   password String
   name     String?
+  email    String  @unique
+  image    String?
+
   bookings Booking[]
   reviews  Review[]
 }
@@ -23,24 +25,36 @@ model Host {
 }
 
 model Property {
-  id        String    @id
-  title     String
-  location  String
+  id            String @id
+  title         String
+  description   String
+  location      String
+  pricePerNight Float
+  bedroomCount  Int
+  bathRoomCount Int
+  maxGuestCount Int
+  rating        Int
+
   hostId    String
-  bookings  Booking[]
   host      Host      @relation(fields: [hostId], references: [id])
+  bookings  Booking[]
   reviews   Review[]
   amenities Amenity[] @relation("PropertyAmenities")
 }
 
 model Booking {
-  id         String   @id
+  id         String @id
   userId     String
   propertyId String
-  startDate  DateTime
-  endDate    DateTime
-  property   Property @relation(fields: [propertyId], references: [id])
-  user       User     @relation(fields: [userId], references: [id])
+
+  checkinDate    DateTime
+  checkoutDate   DateTime
+  numberOfGuests Int
+  totalPrice     Float
+  bookingStatus  String
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Review {
@@ -50,8 +64,9 @@ model Review {
   rating     Int
   comment    String?
   createdAt  DateTime @default(now())
-  property   Property @relation(fields: [propertyId], references: [id])
-  user       User     @relation(fields: [userId], references: [id])
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Amenity {

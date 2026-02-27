@@ -5,85 +5,132 @@ import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
-// GET /bookings?userId=...
-router.get("/", async (req, res) => {
-  const { userId } = req.query;
+// GET /bookings (public) + filter ?userId=
+router.get("/", async (req, res, next) => {
+  try {
+    const { userId } = req.query;
 
-  const items = await prisma.booking.findMany({
-    where: userId ? { userId: String(userId) } : undefined,
-  });
+    const items = await prisma.booking.findMany({
+      where: userId ? { userId: String(userId) } : undefined,
+    });
 
-  res.json(items);
+    res.status(200).json(items);
+  } catch (e) {
+    next(e);
+  }
 });
 
-// POST /bookings
-// body: { userId, propertyId, startDate, endDate }
+// POST /bookings (protected)
 router.post("/", auth, async (req, res) => {
   try {
-    const { userId, propertyId, startDate, endDate } = req.body ?? {};
+    const b = req.body ?? {};
 
-    if (!userId || !propertyId || !startDate || !endDate) {
+    const userId = b.userId;
+    const propertyId = b.propertyId;
+
+    const checkinRaw = b.checkinDate ?? b.startDate;
+    const checkoutRaw = b.checkoutDate ?? b.endDate;
+
+    const numberOfGuests = b.numberOfGuests;
+    const totalPrice = b.totalPrice;
+    const bookingStatus = b.bookingStatus;
+
+    if (
+      !userId ||
+      !propertyId ||
+      !checkinRaw ||
+      !checkoutRaw ||
+      numberOfGuests === undefined ||
+      totalPrice === undefined ||
+      !bookingStatus
+    ) {
       return res.status(400).json({
-        message: "userId, propertyId, startDate, and endDate are required",
+        message:
+          "userId, propertyId, checkinDate/checkoutDate, numberOfGuests, totalPrice, bookingStatus are required",
       });
+    }
+
+    const checkinDate = new Date(checkinRaw);
+    const checkoutDate = new Date(checkoutRaw);
+
+    if (Number.isNaN(checkinDate.getTime()) || Number.isNaN(checkoutDate.getTime())) {
+      return res.status(400).json({ message: "checkinDate/checkoutDate must be valid dates" });
     }
 
     const created = await prisma.booking.create({
       data: {
-        id: uuidv4(), // REQUIRED (no @default(uuid()))
+        id: b.id ? String(b.id) : uuidv4(),
         userId: String(userId),
         propertyId: String(propertyId),
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        checkinDate,
+        checkoutDate,
+        numberOfGuests: Number(numberOfGuests),
+        totalPrice: Number(totalPrice),
+        bookingStatus: String(bookingStatus),
       },
     });
 
     res.status(201).json(created);
   } catch (e) {
-    res
-      .status(400)
-      .json({ message: "Could not create booking", error: String(e) });
+    res.status(400).json({ message: "Could not create booking", error: String(e) });
   }
 });
 
-// GET /bookings/:id
-router.get("/:id", async (req, res) => {
-  const item = await prisma.booking.findUnique({
-    where: { id: String(req.params.id) },
-  });
-
-  if (!item) return res.status(404).json({ message: "Booking not found" });
-  res.json(item);
-});
-
-// PUT /bookings/:id
-// body can include: userId, propertyId, startDate, endDate
-router.put("/:id", auth, async (req, res) => {
+// GET /bookings/:id (public)
+router.get("/:id", async (req, res, next) => {
   try {
-    const { userId, propertyId, startDate, endDate } = req.body ?? {};
-
-    const data = {};
-    if (userId !== undefined) data.userId = String(userId);
-    if (propertyId !== undefined) data.propertyId = String(propertyId);
-    if (startDate !== undefined) data.startDate = new Date(startDate);
-    if (endDate !== undefined) data.endDate = new Date(endDate);
-
-    const updated = await prisma.booking.update({
+    const item = await prisma.booking.findUnique({
       where: { id: String(req.params.id) },
-      data,
     });
 
-    res.json(updated);
+    if (!item) return res.status(404).json({ message: "Booking not found" });
+    res.status(200).json(item);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// PUT /bookings/:id (protected)
+router.put("/:id", auth, async (req, res) => {
+  const id = String(req.params.id);
+  const b = req.body ?? {};
+
+  const data = {};
+
+  if (b.userId !== undefined) data.userId = String(b.userId);
+  if (b.propertyId !== undefined) data.propertyId = String(b.propertyId);
+
+  if (b.checkinDate !== undefined || b.startDate !== undefined) {
+    const d = new Date(b.checkinDate ?? b.startDate);
+    if (Number.isNaN(d.getTime())) return res.status(400).json({ message: "Invalid checkinDate" });
+    data.checkinDate = d;
+  }
+
+  if (b.checkoutDate !== undefined || b.endDate !== undefined) {
+    const d = new Date(b.checkoutDate ?? b.endDate);
+    if (Number.isNaN(d.getTime())) return res.status(400).json({ message: "Invalid checkoutDate" });
+    data.checkoutDate = d;
+  }
+
+  if (b.numberOfGuests !== undefined) data.numberOfGuests = Number(b.numberOfGuests);
+  if (b.totalPrice !== undefined) data.totalPrice = Number(b.totalPrice);
+  if (b.bookingStatus !== undefined) data.bookingStatus = String(b.bookingStatus);
+
+  try {
+    const updated = await prisma.booking.update({ where: { id }, data });
+    res.status(200).json(updated);
   } catch (e) {
     res.status(404).json({ message: "Booking not found", error: String(e) });
   }
 });
 
-// DELETE /bookings/:id
+// DELETE /bookings/:id (protected) -> 200
 router.delete("/:id", auth, async (req, res) => {
+  const id = String(req.params.id);
+
   try {
-    await prisma.booking.delete({ where: { id: String(req.params.id) } });
-    res.status(204).send();
+    await prisma.booking.delete({ where: { id } });
+    res.status(200).json({ message: "Deleted" });
   } catch (e) {
     res.status(404).json({ message: "Booking not found", error: String(e) });
   }

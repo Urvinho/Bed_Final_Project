@@ -1,13 +1,8 @@
-import { v4 as uuidv4 } from "uuid";
 import prisma from "../../prisma.js";
+import { v4 as uuidv4 } from "uuid";
 
-/**
- * Create a Review in the database (Prisma).
- * Your schema requires `id` (no @default(uuid())),
- * so we generate it here with uuid.
- */
-const createReviews = async (userId, propertyId, rating, comment) => {
-  const newReview = await prisma.review.create({
+const createReview = async (userId, propertyId, rating, comment) => {
+  return prisma.review.create({
     data: {
       id: uuidv4(),
       userId: String(userId),
@@ -16,8 +11,6 @@ const createReviews = async (userId, propertyId, rating, comment) => {
       comment: comment ?? null,
     },
   });
-
-  return newReview;
 };
 
-export default createReviews;
+export default createReview;

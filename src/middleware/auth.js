@@ -4,20 +4,22 @@ const authMiddleware = (req, res, next) => {
   const secretKey = process.env.AUTH_SECRET_KEY || "my-secret-key";
   const authHeader = req.headers.authorization || "";
 
+
   const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : authHeader;
+    ? authHeader.slice(7).trim()
+    : authHeader.trim();
 
   if (!token) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res
+      .status(401)
+      .json({ message: "You cannot access this operation without a token!" });
   }
 
   try {
-    const decoded = jwt.verify(token, secretKey);
-    req.user = decoded;
-    next();
-  } catch {
-    return res.status(401).json({ message: "Unauthorized" });
+    req.user = jwt.verify(token, secretKey);
+    return next();
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid token provided!" });
   }
 };
 

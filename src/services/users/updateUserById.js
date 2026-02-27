@@ -7,7 +7,6 @@ const updateUserById = (id, updatedUser) => {
     return null;
   }
 
-  // We make sure that the ID and other, unknown properties are not inserted
   const { username, name, password, image } = updatedUser;
 
   userData.users[userIndex] = {

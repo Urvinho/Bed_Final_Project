@@ -5,49 +5,50 @@ import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
-function pickReviewCreate(body) {
-  return {
-    id: uuidv4(), // REQUIRED because schema has `id String @id` with no default
-    userId: String(body.userId),
-    propertyId: String(body.propertyId),
-    rating: Number(body.rating),
-    comment: body.comment ?? null,
-  };
-}
+// GET /reviews (public) + filters ?userId= & ?propertyId=
+router.get("/", async (req, res, next) => {
+  try {
+    const { userId, propertyId } = req.query;
 
-function pickReviewUpdate(body) {
-  const data = {};
-  if (body.rating !== undefined) data.rating = Number(body.rating);
-  if (body.comment !== undefined) data.comment = body.comment ?? null;
+    const where = {
+      ...(userId ? { userId: String(userId) } : {}),
+      ...(propertyId ? { propertyId: String(propertyId) } : {}),
+    };
 
-  // Usually you do NOT allow changing relations on update:
-  // if (body.userId !== undefined) data.userId = String(body.userId);
-  // if (body.propertyId !== undefined) data.propertyId = String(body.propertyId);
+    const items = await prisma.review.findMany({
+      where: Object.keys(where).length ? where : undefined,
+    });
 
-  return data;
-}
-
-router.get("/", async (req, res) => {
-  const items = await prisma.review.findMany();
-  res.json(items);
+    res.status(200).json(items);
+  } catch (e) {
+    next(e);
+  }
 });
 
+// POST /reviews (protected)
 router.post("/", auth, async (req, res) => {
   try {
-    const { userId, propertyId, rating } = req.body ?? {};
+    const b = req.body ?? {};
+    const userId = b.userId;
+    const propertyId = b.propertyId;
+    const rating = b.rating;
+
     if (!userId || !propertyId || rating === undefined) {
       return res.status(400).json({
-        message: "userId, propertyId, and rating are required",
+        message: "userId, propertyId and rating are required",
       });
     }
 
-    const data = pickReviewCreate(req.body);
+    const created = await prisma.review.create({
+      data: {
+        id: b.id ? String(b.id) : uuidv4(),
+        userId: String(userId),
+        propertyId: String(propertyId),
+        rating: Number(rating),
+        comment: b.comment ?? null,
+      },
+    });
 
-    if (Number.isNaN(data.rating)) {
-      return res.status(400).json({ message: "rating must be a number" });
-    }
-
-    const created = await prisma.review.create({ data });
     res.status(201).json(created);
   } catch (e) {
     res
@@ -56,36 +57,46 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
-  const item = await prisma.review.findUnique({
-    where: { id: String(req.params.id) },
-  });
-  if (!item) return res.status(404).json({ message: "Review not found" });
-  res.json(item);
+// GET /reviews/:id (public)
+router.get("/:id", async (req, res, next) => {
+  try {
+    const item = await prisma.review.findUnique({
+      where: { id: String(req.params.id) },
+    });
+
+    if (!item) return res.status(404).json({ message: "Review not found" });
+    res.status(200).json(item);
+  } catch (e) {
+    next(e);
+  }
 });
 
+// PUT /reviews/:id (protected)
 router.put("/:id", auth, async (req, res) => {
+  const id = String(req.params.id);
+  const b = req.body ?? {};
+
+  const data = {};
+  if (b.userId !== undefined) data.userId = String(b.userId);
+  if (b.propertyId !== undefined) data.propertyId = String(b.propertyId);
+  if (b.rating !== undefined) data.rating = Number(b.rating);
+  if (b.comment !== undefined) data.comment = b.comment ?? null;
+
   try {
-    const data = pickReviewUpdate(req.body);
-
-    if (data.rating !== undefined && Number.isNaN(data.rating)) {
-      return res.status(400).json({ message: "rating must be a number" });
-    }
-
-    const updated = await prisma.review.update({
-      where: { id: String(req.params.id) },
-      data,
-    });
-    res.json(updated);
+    const updated = await prisma.review.update({ where: { id }, data });
+    res.status(200).json(updated);
   } catch (e) {
     res.status(404).json({ message: "Review not found", error: String(e) });
   }
 });
 
+// DELETE /reviews/:id (protected) -> 200
 router.delete("/:id", auth, async (req, res) => {
+  const id = String(req.params.id);
+
   try {
-    await prisma.review.delete({ where: { id: String(req.params.id) } });
-    res.status(204).send();
+    await prisma.review.delete({ where: { id } });
+    res.status(200).json({ message: "Deleted" });
   } catch (e) {
     res.status(404).json({ message: "Review not found", error: String(e) });
   }
