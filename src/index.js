@@ -1,4 +1,5 @@
 import express from "express";
+import * as Sentry from "@sentry/node";
 import "dotenv/config";
 
 import logMiddleware from "./middleware/logMiddleware.js";
@@ -13,6 +14,11 @@ import reviewsRouter from "./routes/reviews.js";
 
 const app = express();
 
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+});
+
+app.use(Sentry.Handlers.requestHandler());
 app.use(express.json());
 app.use(logMiddleware);
 
@@ -25,12 +31,11 @@ app.use("/properties", propertiesRouter);
 app.use("/bookings", bookingsRouter);
 app.use("/reviews", reviewsRouter);
 
-// Catch-all 404 (JSON)
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
-// Error handler
+app.use(Sentry.Handlers.errorHandler());
 app.use(errorHandler);
 
 app.listen(3000, () => console.log("Server is listening on port 3000"));

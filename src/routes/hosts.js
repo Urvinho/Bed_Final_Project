@@ -6,82 +6,121 @@ import { v4 as uuidv4 } from "uuid";
 const router = Router();
 
 // GET /hosts?name=...
-router.get("/", async (req, res) => {
-  const { name } = req.query;
+router.get("/", async (req, res, next) => {
+  try {
+    const { name } = req.query;
 
-  const hosts = await prisma.host.findMany({
-    where: name ? { name: String(name) } : undefined,
-  });
+    const hosts = await prisma.host.findMany({
+      where: name ? { name: String(name) } : undefined,
+      include: {
+        properties: true,
+      },
+    });
 
-  res.status(200).json(hosts);
+    if (name && hosts.length === 0) {
+      return res.status(404).json({ message: "Host not found" });
+    }
+
+    res.status(200).json(hosts);
+  } catch (e) {
+    next(e);
+  }
 });
 
-// POST /hosts (protected)
-router.post("/", auth, async (req, res) => {
+// POST /hosts
+router.post("/", auth, async (req, res, next) => {
   try {
     const { name } = req.body ?? {};
-    if (!name) return res.status(400).json({ message: "name is required" });
+
+    if (!name) {
+      return res.status(400).json({ message: "name is required" });
+    }
+
+    const existing = await prisma.host.findFirst({
+      where: { name: String(name) },
+    });
+
+    if (existing) {
+      return res.status(409).json({ message: "Username exists" });
+    }
 
     const created = await prisma.host.create({
-      data: { id: uuidv4(), name: String(name) },
+      data: {
+        id: uuidv4(),
+        name: String(name),
+      },
     });
 
     res.status(201).json(created);
   } catch (e) {
-    res.status(500).json({ message: "An error occurred on the server, please double-check your request!" });
+    next(e);
   }
 });
 
 // GET /hosts/:id
-router.get("/:id", async (req, res) => {
-  const host = await prisma.host.findUnique({
-    where: { id: String(req.params.id) },
-  });
-
-  if (!host) return res.status(404).json({ message: "Host not found" });
-  res.status(200).json(host);
-});
-
-// PUT /hosts/:id (protected)
-router.put("/:id", auth, async (req, res) => {
+router.get("/:id", async (req, res, next) => {
   try {
-    const { name } = req.body ?? {};
-    const updated = await prisma.host.update({
+    const host = await prisma.host.findUnique({
       where: { id: String(req.params.id) },
-      data: { name: String(name) },
+      include: { properties: true },
     });
-    res.status(200).json(updated);
+
+    if (!host) {
+      return res.status(404).json({ message: "Host not found" });
+    }
+
+    res.status(200).json(host);
   } catch (e) {
-    res.status(404).json({ message: "Host not found" });
+    next(e);
   }
 });
 
-// DELETE /hosts/:id (protected) — delete properties + their children first
-router.delete("/:id", auth, async (req, res) => {
-  const hostId = String(req.params.id);
-
+// PUT /hosts/:id
+router.put("/:id", auth, async (req, res, next) => {
   try {
-    const properties = await prisma.property.findMany({
-      where: { hostId },
-      select: { id: true },
+    const id = String(req.params.id);
+
+    const existing = await prisma.host.findUnique({
+      where: { id },
     });
 
-    await prisma.$transaction(async (tx) => {
-      for (const p of properties) {
-        await tx.review.deleteMany({ where: { propertyId: p.id } });
-        await tx.booking.deleteMany({ where: { propertyId: p.id } });
-        await tx.property.update({
-          where: { id: p.id },
-          data: { amenities: { set: [] } },
-        });
-        await tx.property.delete({ where: { id: p.id } });
-      }
-      await tx.host.delete({ where: { id: hostId } });
+    if (!existing) {
+      return res.status(404).json({ message: "Host not found" });
+    }
+
+    const updated = await prisma.host.update({
+      where: { id },
+      data: {
+        name: String(req.body?.name),
+      },
+    });
+
+    res.status(200).json(updated);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// DELETE /hosts/:id
+router.delete("/:id", auth, async (req, res, next) => {
+  try {
+    const id = String(req.params.id);
+
+    const existing = await prisma.host.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Host not found" });
+    }
+
+    await prisma.host.delete({
+      where: { id },
     });
 
     res.status(200).json({ message: "Deleted" });
   } catch (e) {
-    res.status(404).json({ message: "Host not found" });
+    next(e);
   }
 });
 

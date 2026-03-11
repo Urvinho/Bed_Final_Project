@@ -19,9 +19,13 @@ model User {
 }
 
 model Host {
-  id         String     @id
-  name       String
-  properties Property[]
+  id           String     @id
+  name         String
+  email        String?    @unique
+  phoneNumber  String?
+  profileImage String?
+  aboutMe      String?
+  properties   Property[]
 }
 
 model Property {
@@ -43,18 +47,17 @@ model Property {
 }
 
 model Booking {
-  id         String @id
-  userId     String
-  propertyId String
-
+  id             String   @id
+  userId         String
+  propertyId     String
   checkinDate    DateTime
   checkoutDate   DateTime
   numberOfGuests Int
   totalPrice     Float
   bookingStatus  String
 
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Review {
@@ -65,8 +68,8 @@ model Review {
   comment    String?
   createdAt  DateTime @default(now())
 
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Amenity {
