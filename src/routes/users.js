@@ -10,10 +10,11 @@ router.get("/", async (req, res, next) => {
   try {
     const { username, email } = req.query;
 
-    const where =
-      username ? { username: String(username) } :
-      email ? { email: String(email) } :
-      undefined;
+    const where = username
+      ? { username: String(username) }
+      : email
+      ? { email: String(email) }
+      : undefined;
 
     const users = await prisma.user.findMany({
       where,
@@ -50,17 +51,13 @@ router.post("/", auth, async (req, res, next) => {
 
     const existing = await prisma.user.findFirst({
       where: {
-        OR: [
-          { username: String(username) },
-          { email: String(email) },
-        ],
+        OR: [{ username: String(username) }],
       },
     });
 
     if (existing) {
       return res.status(409).json({ message: "Username exists" });
     }
-
     const created = await prisma.user.create({
       data: {
         id: body.id ? String(body.id) : uuidv4(),

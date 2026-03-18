@@ -34,6 +34,10 @@ router.post("/", auth, async (req, res, next) => {
   try {
     const b = req.body ?? {};
 
+    if (!b.userId || !b.propertyId || b.rating === undefined) {
+      return res.status(400).json({ message: "userId, propertyId and rating are required" });
+    }
+
     const created = await prisma.review.create({
       data: {
         id: b.id ? String(b.id) : uuidv4(),

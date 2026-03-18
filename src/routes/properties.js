@@ -16,7 +16,9 @@ router.get("/", async (req, res, next) => {
     if (pricePerNight !== undefined) {
       const price = Number(pricePerNight);
       if (Number.isNaN(price)) {
-        return res.status(400).json({ message: "pricePerNight must be a number" });
+        return res
+          .status(400)
+          .json({ message: "pricePerNight must be a number" });
       }
       where.pricePerNight = price;
     }
@@ -40,6 +42,20 @@ router.get("/", async (req, res, next) => {
 router.post("/", auth, async (req, res, next) => {
   try {
     const b = req.body ?? {};
+
+    if (
+      !b.title ||
+      !b.description ||
+      !b.location ||
+      b.pricePerNight === undefined ||
+      b.bedroomCount === undefined ||
+      b.bathRoomCount === undefined ||
+      b.maxGuestCount === undefined ||
+      b.rating === undefined ||
+      !b.hostId
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
 
     const created = await prisma.property.create({
       data: {
@@ -100,10 +116,14 @@ router.put("/:id", auth, async (req, res, next) => {
     if (b.title !== undefined) data.title = String(b.title);
     if (b.description !== undefined) data.description = String(b.description);
     if (b.location !== undefined) data.location = String(b.location);
-    if (b.pricePerNight !== undefined) data.pricePerNight = Number(b.pricePerNight);
-    if (b.bedroomCount !== undefined) data.bedroomCount = Number(b.bedroomCount);
-    if (b.bathRoomCount !== undefined) data.bathRoomCount = Number(b.bathRoomCount);
-    if (b.maxGuestCount !== undefined) data.maxGuestCount = Number(b.maxGuestCount);
+    if (b.pricePerNight !== undefined)
+      data.pricePerNight = Number(b.pricePerNight);
+    if (b.bedroomCount !== undefined)
+      data.bedroomCount = Number(b.bedroomCount);
+    if (b.bathRoomCount !== undefined)
+      data.bathRoomCount = Number(b.bathRoomCount);
+    if (b.maxGuestCount !== undefined)
+      data.maxGuestCount = Number(b.maxGuestCount);
     if (b.rating !== undefined) data.rating = Number(b.rating);
     if (b.hostId !== undefined) data.hostId = String(b.hostId);
 

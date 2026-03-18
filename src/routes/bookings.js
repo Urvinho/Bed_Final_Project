@@ -29,6 +29,18 @@ router.post("/", auth, async (req, res, next) => {
   try {
     const b = req.body ?? {};
 
+    if (
+      !b.userId ||
+      !b.propertyId ||
+      (!b.checkinDate && !b.startDate) ||
+      (!b.checkoutDate && !b.endDate) ||
+      b.numberOfGuests === undefined ||
+      b.totalPrice === undefined ||
+      !b.bookingStatus
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
     const created = await prisma.booking.create({
       data: {
         id: b.id ? String(b.id) : uuidv4(),

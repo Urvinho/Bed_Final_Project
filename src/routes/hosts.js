@@ -36,13 +36,8 @@ router.post("/", auth, async (req, res, next) => {
       return res.status(400).json({ message: "name is required" });
     }
 
-    const existing = await prisma.host.findFirst({
-      where: { name: String(name) },
-    });
 
-    if (existing) {
-      return res.status(409).json({ message: "Username exists" });
-    }
+  
 
     const created = await prisma.host.create({
       data: {
