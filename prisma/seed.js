@@ -65,6 +65,7 @@ async function main() {
         email: String(u.email),
         password: String(u.password),
         name: u.name ?? null,
+        image: u.pictureUrl ?? null,
       },
     });
   }
@@ -77,6 +78,10 @@ async function main() {
       data: {
         id: String(h.id), // keep EXACT id from JSON
         name: String(h.name),
+        email: h.email ?? null,
+        phoneNumber: h.phoneNumber ?? null,
+        profileImage: h.pictureUrl ?? null,
+        aboutMe: h.aboutMe ?? null,
       },
     });
   }
