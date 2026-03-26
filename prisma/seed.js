@@ -70,6 +70,7 @@ async function main() {
     });
   }
 
+  
   // ---------- HOSTS ----------
   console.log("🌱 Hosts...");
   for (const h of hosts) {
