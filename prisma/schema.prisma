@@ -7,25 +7,28 @@ datasource db {
 }
 
 model User {
-  id       String  @id
-  username String  @unique
-  password String
-  name     String?
-  email    String 
-  image    String?
+  id          String  @id
+  username    String  @unique
+  password    String
+  name        String
+  email       String
+  phoneNumber String?
+  pictureUrl  String?
 
   bookings Booking[]
   reviews  Review[]
 }
 
 model Host {
-  id           String     @id
-  name         String
-  email        String?    
-  phoneNumber  String?
-  profileImage String?
-  aboutMe      String?
-  properties   Property[]
+  id          String     @id
+  username    String     @unique
+  password    String
+  name        String
+  email       String?
+  phoneNumber String?
+  pictureUrl  String?
+  aboutMe     String?
+  listings    Property[]
 }
 
 model Property {

@@ -23,7 +23,8 @@ router.get("/", async (req, res, next) => {
         username: true,
         email: true,
         name: true,
-        image: true,
+        pictureUrl: true,
+        phoneNumber: true,
       },
     });
 
@@ -50,14 +51,13 @@ router.post("/", auth, async (req, res, next) => {
     }
 
     const existing = await prisma.user.findFirst({
-      where: {
-        OR: [{ username: String(username) }],
-      },
+      where: { username: String(username) },
     });
 
     if (existing) {
       return res.status(409).json({ message: "Username exists" });
     }
+
     const created = await prisma.user.create({
       data: {
         id: body.id ? String(body.id) : uuidv4(),
@@ -65,14 +65,16 @@ router.post("/", auth, async (req, res, next) => {
         email: String(email),
         password: String(password),
         name: body.name ?? null,
-        image: body.image ?? body.pictureUrl ?? null,
+        pictureUrl: body.pictureUrl ?? null,
+        phoneNumber: body.phoneNumber ?? null,
       },
       select: {
         id: true,
         username: true,
         email: true,
         name: true,
-        image: true,
+        pictureUrl: true,
+        phoneNumber: true,
       },
     });
 
@@ -92,7 +94,8 @@ router.get("/:id", async (req, res, next) => {
         username: true,
         email: true,
         name: true,
-        image: true,
+        pictureUrl: true,
+        phoneNumber: true,
       },
     });
 
@@ -126,9 +129,8 @@ router.put("/:id", auth, async (req, res, next) => {
     if (body.email !== undefined) data.email = String(body.email);
     if (body.password !== undefined) data.password = String(body.password);
     if (body.name !== undefined) data.name = body.name ?? null;
-    if (body.image !== undefined || body.pictureUrl !== undefined) {
-      data.image = body.image ?? body.pictureUrl ?? null;
-    }
+    if (body.pictureUrl !== undefined) data.pictureUrl = body.pictureUrl ?? null;
+    if (body.phoneNumber !== undefined) data.phoneNumber = body.phoneNumber ?? null;
 
     const updated = await prisma.user.update({
       where: { id },
@@ -138,7 +140,8 @@ router.put("/:id", auth, async (req, res, next) => {
         username: true,
         email: true,
         name: true,
-        image: true,
+        pictureUrl: true,
+        phoneNumber: true,
       },
     });
 

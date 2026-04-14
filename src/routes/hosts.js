@@ -13,7 +13,7 @@ router.get("/", async (req, res, next) => {
     const hosts = await prisma.host.findMany({
       where: name ? { name: String(name) } : undefined,
       include: {
-        properties: true,
+        listings: true,
       },
     });
 
@@ -30,19 +30,23 @@ router.get("/", async (req, res, next) => {
 // POST /hosts
 router.post("/", auth, async (req, res, next) => {
   try {
-    const { name } = req.body ?? {};
+    const b = req.body ?? {};
+    const { name, username, password } = b;
 
-    if (!name) {
-      return res.status(400).json({ message: "name is required" });
+    if (!name || !username || !password) {
+      return res.status(400).json({ message: "name, username and password are required" });
     }
-
-
-  
 
     const created = await prisma.host.create({
       data: {
         id: uuidv4(),
+        username: String(username),
+        password: String(password),
         name: String(name),
+        email: b.email ?? null,
+        phoneNumber: b.phoneNumber ?? null,
+        pictureUrl: b.pictureUrl ?? null,
+        aboutMe: b.aboutMe ?? null,
       },
     });
 
@@ -57,7 +61,7 @@ router.get("/:id", async (req, res, next) => {
   try {
     const host = await prisma.host.findUnique({
       where: { id: String(req.params.id) },
-      include: { properties: true },
+      include: { listings: true },
     });
 
     if (!host) {
@@ -83,11 +87,20 @@ router.put("/:id", auth, async (req, res, next) => {
       return res.status(404).json({ message: "Host not found" });
     }
 
+    const b = req.body ?? {};
+    const data = {};
+
+    if (b.username !== undefined) data.username = String(b.username);
+    if (b.password !== undefined) data.password = String(b.password);
+    if (b.name !== undefined) data.name = String(b.name);
+    if (b.email !== undefined) data.email = b.email ?? null;
+    if (b.phoneNumber !== undefined) data.phoneNumber = b.phoneNumber ?? null;
+    if (b.pictureUrl !== undefined) data.pictureUrl = b.pictureUrl ?? null;
+    if (b.aboutMe !== undefined) data.aboutMe = b.aboutMe ?? null;
+
     const updated = await prisma.host.update({
       where: { id },
-      data: {
-        name: String(req.body?.name),
-      },
+      data,
     });
 
     res.status(200).json(updated);

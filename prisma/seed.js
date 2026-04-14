@@ -60,12 +60,13 @@ async function main() {
     assertId(u, "user");
     await prisma.user.create({
       data: {
-        id: String(u.id), // keep EXACT id from JSON
+        id: String(u.id),
         username: String(u.username),
         email: String(u.email),
         password: String(u.password),
         name: u.name ?? null,
-        image: u.pictureUrl ?? null,
+        pictureUrl: u.pictureUrl ?? null,  // changed from image
+        phoneNumber: u.phoneNumber ?? null, // add this
       },
     });
   }
@@ -77,14 +78,16 @@ async function main() {
     assertId(h, "host");
     await prisma.host.create({
       data: {
-        id: String(h.id), // keep EXACT id from JSON
-        name: String(h.name),
-        email: h.email ?? null,
-        phoneNumber: h.phoneNumber ?? null,
-        profileImage: h.pictureUrl ?? null,
-        aboutMe: h.aboutMe ?? null,
-      },
-    });
+        id: String(h.id),
+    username: String(h.username),
+    password: String(h.password),
+    name: String(h.name),
+    email: h.email ?? null,
+    phoneNumber: h.phoneNumber ?? null,
+    pictureUrl: h.pictureUrl ?? null,  // changed from profileImage
+    aboutMe: h.aboutMe ?? null,
+  },
+});
   }
 
   // ---------- AMENITIES ----------
